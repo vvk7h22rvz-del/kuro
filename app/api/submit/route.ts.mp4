@@ -1,0 +1,46 @@
+import { NextResponse } from "next/server"
+
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbz94B7a_NM6i_5qt9Dtu6Kyc7VyDo1vd_fgXlKeBXhiO5PYxBeSgC0cDshTT7WAodJC/exec"
+
+export async function POST(request: Request) {
+  try {
+    const data = await request.json()
+
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(data),
+      redirect: "follow",
+      cache: "no-store",
+    })
+
+    const text = await response.text()
+
+    let result: { success?: boolean; error?: string } = {}
+
+    try {
+      result = JSON.parse(text)
+    } catch {
+      throw new Error("Apps Scriptから正しい応答が返りませんでした")
+    }
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "送信に失敗しました")
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("submit error:", error)
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "送信に失敗しました",
+      },
+      { status: 500 }
+    )
+  }
+}
